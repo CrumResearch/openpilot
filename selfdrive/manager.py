@@ -187,6 +187,7 @@ managed_processes = {
   "updated": "selfdrive.updated",
   "dmonitoringmodeld": ("selfdrive/modeld", ["./dmonitoringmodeld"]),
   "modeld": ("selfdrive/modeld", ["./modeld"]),
+  "mapd": ("selfdrive/mapd", ["./mapd.py"]),
   "driverview": "selfdrive.controls.lib.driverview",
 }
 
@@ -215,6 +216,7 @@ persistent_processes = [
   'logmessaged',
   'ui',
   'uploader',
+  'mapd',
 ]
 
 if ANDROID:
@@ -236,6 +238,7 @@ car_started_processes = [
   'modeld',
   'proclogd',
   'ubloxd',
+  'mapd',
   #'locationd',
 ]
 
@@ -320,13 +323,13 @@ def prepare_managed_process(p):
   elif os.path.isfile(os.path.join(BASEDIR, proc[0], "Makefile")):
     # build this process
     cloudlog.info("building %s" % (proc,))
-    try:
-      subprocess.check_call(["make", "-j4"], cwd=os.path.join(BASEDIR, proc[0]))
-    except subprocess.CalledProcessError:
-      # make clean if the build failed
-      cloudlog.warning("building %s failed, make clean" % (proc, ))
-      subprocess.check_call(["make", "clean"], cwd=os.path.join(BASEDIR, proc[0]))
-      subprocess.check_call(["make", "-j4"], cwd=os.path.join(BASEDIR, proc[0]))
+    # try:
+    subprocess.check_call(["make", "-j4"], cwd=os.path.join(BASEDIR, proc[0]))
+    # except subprocess.CalledProcessError:
+    #   # make clean if the build failed
+    #   cloudlog.warning("building %s failed, make clean" % (proc, ))
+    #   subprocess.check_call(["make", "clean"], cwd=os.path.join(BASEDIR, proc[0]))
+    #   subprocess.check_call(["make", "-j4"], cwd=os.path.join(BASEDIR, proc[0]))
 
 
 def join_process(process, timeout):
