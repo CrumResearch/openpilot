@@ -444,6 +444,7 @@ class MapsdThread(LoggerThread):
             dat.liveMapData.mapValid = map_valid
             self.logger.debug("Sending ... liveMapData ... %s", str(dat))
             self.pm.send('liveMapData', dat)
+            print("liveMapData: %s", dat)
             
 class MessagedGPSThread(LoggerThread):
     def __init__(self, threadID, name, sharedParams={}):
