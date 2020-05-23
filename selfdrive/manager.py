@@ -217,6 +217,7 @@ persistent_processes = [
   'ui',
   'uploader',
   'mapd',
+  'locationd',
 ]
 
 if ANDROID:
@@ -238,8 +239,8 @@ car_started_processes = [
   'modeld',
   'proclogd',
   'ubloxd',
-  'mapd',
-  #'locationd',
+  # 'mapd',
+  # 'locationd',
 ]
 
 if WEBCAM:

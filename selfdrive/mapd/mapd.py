@@ -28,6 +28,7 @@ from selfdrive.mapd.mapd_helpers import MAPS_LOOKAHEAD_DISTANCE, Way, circle_thr
 class LoggerThread(threading.Thread):
     def __init__(self, threadID, name):
         threading.Thread.__init__(self)
+        self.daemon = True
         self.threadID = threadID
         self.name = name
         self.logger = logging.getLogger(name)
@@ -35,7 +36,7 @@ class LoggerThread(threading.Thread):
         f = logging.Formatter('%(asctime)s %(processName)-10s %(name)s %(levelname)-8s %(message)s')
         h.setFormatter(f)
         self.logger.addHandler(h)
-        self.logger.setLevel(logging.CRITICAL) # set to logging.DEBUG to enable logging
+        self.logger.setLevel(logging.DEBUG) # set to logging.DEBUG to enable logging
         # self.logger.setLevel(logging.DEBUG) # set to logging.CRITICAL to disable logging
         
     def save_gps_data(self, gps):
@@ -53,6 +54,7 @@ class QueryThread(LoggerThread):
     def __init__(self, threadID, name, sharedParams={}): # sharedParams is dict of params shared between two threads
         # invoke parent constructor https://stackoverflow.com/questions/2399307/how-to-invoke-the-super-constructor-in-python
         LoggerThread.__init__(self, threadID, name)
+        self.daemon = True
         self.sharedParams = sharedParams
         # memorize some parameters
         self.OVERPASS_API_LOCAL = "http://192.168.43.1:12345/api/interpreter"
@@ -239,6 +241,7 @@ class MapsdThread(LoggerThread):
     def __init__(self, threadID, name, sharedParams={}):
         # invoke parent constructor 
         LoggerThread.__init__(self, threadID, name)
+        self.daemon = True
         self.sharedParams = sharedParams
         self.pm = messaging.PubMaster(['liveMapData'])
         self.logger.debug("entered mapsd_thread, ... %s" % ( str(self.pm)))
@@ -256,6 +259,7 @@ class MapsdThread(LoggerThread):
         max_speed_prev = 0
         had_good_gps = False
         start = time.time()
+        delayStart = time.time()
         while True:
             if time.time() - start > 0.2:
                 print("Mapd MapsdThread lagging by: %s" % str(time.time() - start - 0.1))
@@ -280,7 +284,7 @@ class MapsdThread(LoggerThread):
                 continue
             fix_ok = gps.flags & 1
             self.logger.debug("fix_ok = %s" % str(fix_ok))
-
+            
             if gps.accuracy > 2.5:
                 if gps.accuracy > 5.0:
                     had_good_gps = False
@@ -444,12 +448,15 @@ class MapsdThread(LoggerThread):
             dat.liveMapData.mapValid = map_valid
             self.logger.debug("Sending ... liveMapData ... %s", str(dat))
             self.pm.send('liveMapData', dat)
-            print("liveMapData: %s", dat)
+            if time.time() - delayStart > 5:
+                delayStart = time.time()
+                print("liveMapData: %s" % str(dat))
             
 class MessagedGPSThread(LoggerThread):
     def __init__(self, threadID, name, sharedParams={}):
         # invoke parent constructor 
         LoggerThread.__init__(self, threadID, name)
+        self.daemon = True
         self.sharedParams = sharedParams
         self.sm = messaging.SubMaster(['gpsLocationExternal'])
         self.logger.debug("entered messagedGPS_thread, ... %s" % (str(self.sm)))
@@ -470,7 +477,7 @@ class MessagedGPSThread(LoggerThread):
             if self.sm.updated['gpsLocationExternal']:
                 gps = self.sm['gpsLocationExternal']
                 self.save_gps_data(gps)
-            
+
             query_lock = self.sharedParams.get('query_lock', None)
             
             query_lock.acquire()
@@ -580,13 +587,13 @@ def main():
     mggps = MessagedGPSThread(3, "MessagedGPSThread", sharedParams=sharedParams)
     # mgarne = MessagedArneThread(4, "MessagedArneThread", sharedParams=sharedParams)
     
-    print("starting qt")
     qt.start()
-    print("starting mt")
     mt.start()
-    print("starting mggps")
     mggps.start()
     # mgarne.start()
+
+    while True:
+        time.sleep(0.1)
     
 if __name__ == "__main__":
     main()
