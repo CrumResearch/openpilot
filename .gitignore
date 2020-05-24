@@ -60,5 +60,5 @@ coverage.xml
 htmlcov
 pandaextra
 
-*.log
-*.log.*
+/*.log
+/*.log.*

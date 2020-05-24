@@ -8,6 +8,7 @@ import requests
 import threading
 import numpy as np
 # setup logging
+from common.basedir import BASEDIR
 import logging
 import logging.handlers
 from scipy import spatial
@@ -32,7 +33,7 @@ class LoggerThread(threading.Thread):
         self.threadID = threadID
         self.name = name
         self.logger = logging.getLogger(name)
-        h = logging.handlers.RotatingFileHandler(str(name)+'-Thread.log', 'a', 10*1024*1024, 5) 
+        h = logging.handlers.RotatingFileHandler(BASEDIR+"/"+str(name)+'-Thread.log', 'a', 10*1024*1024, 5) 
         f = logging.Formatter('%(asctime)s %(processName)-10s %(name)s %(levelname)-8s %(message)s')
         h.setFormatter(f)
         self.logger.addHandler(h)
@@ -452,7 +453,6 @@ class MapsdThread(LoggerThread):
             self.pm.send('liveMapData', dat)
             if time.time() - delayStart > 5:
                 delayStart = time.time()
-                print("liveMapData: %s" % str(dat))
             
 class MessagedGPSThread(LoggerThread):
     def __init__(self, threadID, name, sharedParams={}):
