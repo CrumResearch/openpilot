@@ -295,6 +295,8 @@ class MapsdThread(LoggerThread):
             elif not had_good_gps:
                 had_good_gps = True
             if not fix_ok or self.sharedParams['last_query_result'] is None or not self.sharedParams['cache_valid']:
+                self.logger.debug("cache_valid %s" % str(self.sharedParams['cache_valid']))
+                self.logger.debug("last_query_result %s" % str(self.sharedParams['last_query_result']))
                 self.logger.debug("fix_ok %s" % fix_ok)
                 self.logger.error("Error in fix_ok logic")
                 cur_way = None
