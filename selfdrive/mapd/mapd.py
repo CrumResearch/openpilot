@@ -18,7 +18,7 @@ import cereal.messaging as messaging
 # import cereal.messaging_arne as messaging_arne
 from selfdrive.version import version, dirty
 from common.transformations.coordinates import geodetic2ecef
-from selfdrive.mapd.mapd_helpers import MAPS_LOOKAHEAD_DISTANCE, Way, circle_through_points, rate_curvature_points
+from mapd_helpers import MAPS_LOOKAHEAD_DISTANCE, Way, circle_through_points, rate_curvature_points
 
 #DEFAULT_SPEEDS_BY_REGION_JSON_FILE = BASEDIR + "/selfdrive/mapd/default_speeds_by_region.json"
 #from selfdrive.mapd import default_speeds_generator
