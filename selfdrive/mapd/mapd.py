@@ -36,7 +36,7 @@ class LoggerThread(threading.Thread):
         f = logging.Formatter('%(asctime)s %(processName)-10s %(name)s %(levelname)-8s %(message)s')
         h.setFormatter(f)
         self.logger.addHandler(h)
-        self.logger.setLevel(logging.DEBUG) # set to logging.DEBUG to enable logging
+        self.logger.setLevel(logging.CRITICAL) # set to logging.DEBUG to enable logging
         # self.logger.setLevel(logging.DEBUG) # set to logging.CRITICAL to disable logging
         
     def save_gps_data(self, gps):
