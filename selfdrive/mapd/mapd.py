@@ -55,7 +55,6 @@ class QueryThread(LoggerThread):
     def __init__(self, threadID, name, sharedParams={}): # sharedParams is dict of params shared between two threads
         # invoke parent constructor https://stackoverflow.com/questions/2399307/how-to-invoke-the-super-constructor-in-python
         LoggerThread.__init__(self, threadID, name)
-        self.daemon = True
         self.sharedParams = sharedParams
         # memorize some parameters
         self.OVERPASS_API_LOCAL = "http://192.168.43.1:12345/api/interpreter"
@@ -242,7 +241,6 @@ class MapsdThread(LoggerThread):
     def __init__(self, threadID, name, sharedParams={}):
         # invoke parent constructor 
         LoggerThread.__init__(self, threadID, name)
-        self.daemon = True
         self.sharedParams = sharedParams
         self.pm = messaging.PubMaster(['liveMapData'])
         self.logger.debug("entered mapsd_thread, ... %s" % ( str(self.pm)))
@@ -285,7 +283,7 @@ class MapsdThread(LoggerThread):
                 continue
             fix_ok = gps.flags & 1
             self.logger.debug("fix_ok = %s" % str(fix_ok))
-            
+
             if gps.accuracy > 2.5:
                 if gps.accuracy > 5.0:
                     had_good_gps = False
@@ -296,8 +294,6 @@ class MapsdThread(LoggerThread):
             elif not had_good_gps:
                 had_good_gps = True
             if not fix_ok or self.sharedParams['last_query_result'] is None or not self.sharedParams['cache_valid']:
-                self.logger.debug("cache_valid %s" % str(self.sharedParams['cache_valid']))
-                self.logger.debug("last_query_result %s" % str(self.sharedParams['last_query_result']))
                 self.logger.debug("fix_ok %s" % fix_ok)
                 self.logger.error("Error in fix_ok logic")
                 cur_way = None
@@ -479,7 +475,7 @@ class MessagedGPSThread(LoggerThread):
             if self.sm.updated['gpsLocationExternal']:
                 gps = self.sm['gpsLocationExternal']
                 self.save_gps_data(gps)
-
+            
             query_lock = self.sharedParams.get('query_lock', None)
             
             query_lock.acquire()

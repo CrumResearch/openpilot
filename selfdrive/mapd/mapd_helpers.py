@@ -200,9 +200,9 @@ class Way:
       results, tree, real_nodes, node_to_way, location_info = query_results
 
     cur_pos = geodetic2ecef((lat, lon, 0))
-    nodes = tree.query_ball_point(cur_pos, 50)
+    nodes = tree.query_ball_point(cur_pos, 150)
 
-    # If no nodes within 50m, choose closest one
+    # If no nodes within 150m, choose closest one
     if not nodes:
       nodes = [tree.query(cur_pos)[1]]
 
