@@ -1,8 +1,14 @@
 What's in the fork
-===================
+------------------
 * Uses OpenStreetMaps to pull speed limits to display on the screen.  <br>(Requires an internet connection while driving) <br>Thanks to [arne182](https://github.com/arne182/ArnePilot) for his work on this.
 
 <br>
+
+TODO:
+=====
+* For FCA vehicles, adjust cruise control speed to the OpenPilot target speed to allow OP to control the speed of the vehicle.
+* Use map data to slow for curves
+* Use speed limit data to slow for lower speed limits
 
 [![](https://i.imgur.com/UelUjKAh.png)](#)
 
