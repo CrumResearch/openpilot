@@ -142,7 +142,7 @@ def state_transition(frame, CS, CP, state, events, soft_disable_timer, v_cruise_
   v_cruise_kph_last = v_cruise_kph
 
   # if stock cruise is completely disabled, then we can use our own set speed logic
-  if not CP.enableCruise:
+  if not CP.enableCruise or CP.enableACCAccelControl:
     v_cruise_kph = update_v_cruise(v_cruise_kph, CS.buttonEvents, enabled)
   elif CP.enableCruise and CS.cruiseState.enabled:
     v_cruise_kph = CS.cruiseState.speed * CV.MS_TO_KPH
@@ -316,6 +316,7 @@ def data_send(sm, pm, CS, CI, CP, VM, state, events, actuators, v_cruise_kph, rk
   brake_discount = (1.0 - clip(actuators.brake * 3., 0.0, 1.0))  # brake discount removes a sharp nonlinearity
   CC.cruiseControl.speedOverride = float(max(0.0, (LoC.v_pid + CS.cruiseState.speedOffset) * brake_discount) if CP.enableCruise else 0.0)
   CC.cruiseControl.accelOverride = CI.calc_accel_override(CS.aEgo, sm['plan'].aTarget, CS.vEgo, sm['plan'].vTarget)
+  CC.cruiseControl.targetSpeed = sm['plan'].vTargetFuture
 
   CC.hudControl.setSpeed = float(v_cruise_kph * CV.KPH_TO_MS)
   CC.hudControl.speedVisible = isEnabled(state)

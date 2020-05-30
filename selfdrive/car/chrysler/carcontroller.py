@@ -1,11 +1,32 @@
+import time
+from common.basedir import BASEDIR
+import logging
+import logging.handlers
+
 from selfdrive.car import apply_toyota_steer_torque_limits
 from selfdrive.car.chrysler.chryslercan import create_lkas_hud, create_lkas_command, \
-                                               create_wheel_buttons
+                                               create_wheel_buttons_command
 from selfdrive.car.chrysler.values import CAR, SteerLimitParams
 from opendbc.can.packer import CANPacker
+from selfdrive.config import Conversions as CV
 
-class CarController():
+MIN_ACC_SPEED_MPH = 20
+
+class Logger():
+  def __init__(self, name):
+    self.name = name
+    self.logger = logging.getLogger(name)
+    h = logging.handlers.RotatingFileHandler(BASEDIR+"/"+str(name)+'.log', 'a', 10*1024*1024, 5) 
+    f = logging.Formatter('%(asctime)s %(processName)-10s %(name)s %(levelname)-8s %(message)s')
+    h.setFormatter(f)
+    self.logger.addHandler(h)
+    self.logger.setLevel(logging.CRITICAL) # set to logging.DEBUG to enable logging
+    # self.logger.setLevel(logging.DEBUG) # set to logging.CRITICAL to disable logging
+    self.delayLog = time.time()
+
+class CarController(Logger):
   def __init__(self, dbc_name, CP, VM):
+    Logger.__init__(self, "CarController")
     self.apply_steer_last = 0
     self.ccframe = 0
     self.prev_frame = -1
@@ -14,11 +35,16 @@ class CarController():
     self.alert_active = False
     self.gone_fast_yet = False
     self.steer_rate_limited = False
+    self.enable_acc_accel_control = CP.enableACCAccelControl
+
+    self.logger.info("************** INIT CarController")
+    self.logger.info("enableACCAccelControl: %s" % str(self.enable_acc_accel_control))
+    self.logger.info("MIN_ACC_SPEED_MPH: %s" % str(MIN_ACC_SPEED_MPH))
 
     self.packer = CANPacker(dbc_name)
 
 
-  def update(self, enabled, CS, actuators, pcm_cancel_cmd, hud_alert):
+  def update(self, enabled, CS, actuators, pcm_cancel_cmd, hud_alert, acc_speed, target_speed):
     # this seems needed to avoid steering faults and to force the sync with the EPS counter
     frame = CS.lkas_counter
     if self.prev_frame == frame:
@@ -49,9 +75,27 @@ class CarController():
     #*** control msgs ***
 
     if pcm_cancel_cmd:
-      # TODO: would be better to start from frame_2b3
-      new_msg = create_wheel_buttons(self.packer, self.ccframe, cancel=True)
+      new_msg = create_wheel_buttons_command(self, self.packer, CS.buttonCounter, 'ACC_CANCEL', True)
       can_sends.append(new_msg)
+      
+    elif self.enable_acc_accel_control and enabled:
+      # Move the adaptive curse control to the target speed
+      if self.ccframe % 10 == 0: # max pressing speed is 10hz
+        # Using MPH since it's more coarse so there should be less wobble on the speed setting
+        current = round(acc_speed * CV.MS_TO_MPH)
+        target = round(target_speed * CV.MS_TO_MPH)
+        self.logger.info("**************")
+        self.logger.info("Current ACC Speed: %s" % str(current))
+        self.logger.info("Target ACC Speed: %s" % str(target))
+
+        if target < current and current > MIN_ACC_SPEED_MPH:
+          self.logger.info("Slowing Down: ACC_SPEED_DEC")
+          new_msg = create_wheel_buttons_command(self, self.packer, CS.buttonCounter, 'ACC_SPEED_DEC', True)
+          can_sends.append(new_msg)
+        elif target > current:
+          self.logger.info("Speeding Up: ACC_SPEED_INC")
+          new_msg = create_wheel_buttons_command(self, self.packer, CS.buttonCounter, 'ACC_SPEED_INC', True)
+          can_sends.append(new_msg)
 
     # LKAS_HEARTBIT is forwarded by Panda so no need to send it here.
     # frame is 100Hz (0.01s period)

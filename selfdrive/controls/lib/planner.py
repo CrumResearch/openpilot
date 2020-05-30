@@ -3,6 +3,10 @@ import math
 import numpy as np
 from common.params import Params
 from common.numpy_fast import interp
+import time
+from common.basedir import BASEDIR
+import logging
+import logging.handlers
 
 import cereal.messaging as messaging
 from cereal import car
@@ -61,9 +65,23 @@ def limit_accel_in_turns(v_ego, angle_steers, a_target, CP):
 
   return [a_target[0], min(a_target[1], a_x_allowed)]
 
+# define Logger class to implement logging functionality
+class Logger():
+  def __init__(self, name):
+    self.name = name
+    self.logger = logging.getLogger(name)
+    h = logging.handlers.RotatingFileHandler(BASEDIR+"/"+str(name)+'.log', 'a', 10*1024*1024, 5) 
+    f = logging.Formatter('%(asctime)s %(processName)-10s %(name)s %(levelname)-8s %(message)s')
+    h.setFormatter(f)
+    self.logger.addHandler(h)
+    self.logger.setLevel(logging.CRITICAL) # set to logging.DEBUG to enable logging
+    # self.logger.setLevel(logging.DEBUG) # set to logging.CRITICAL to disable logging
+    self.delayLog = time.time()
 
-class Planner():
+class Planner(Logger):
   def __init__(self, CP):
+    Logger.__init__(self, "Planner")
+
     self.CP = CP
 
     self.mpc1 = LongitudinalMpc(1)
@@ -250,3 +268,7 @@ class Planner():
     self.a_acc_start = a_acc_sol
 
     self.first_loop = False
+
+    if time.time() - self.delayLog > 5:
+      self.delayLog = time.time()
+      self.logger.info("planner: %s" % str(plan_send))

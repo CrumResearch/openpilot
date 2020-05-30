@@ -1,12 +1,37 @@
 #!/usr/bin/env python3
+
+import time
+from common.basedir import BASEDIR
+import logging
+import logging.handlers
+
 from cereal import car
 from selfdrive.controls.lib.drive_helpers import EventTypes as ET, create_event
 from selfdrive.car.chrysler.values import Ecu, ECU_FINGERPRINT, CAR, FINGERPRINTS
 from selfdrive.car import STD_CARGO_KG, scale_rot_inertia, scale_tire_stiffness, is_ecu_disconnected, gen_empty_fingerprint
 from selfdrive.car.interfaces import CarInterfaceBase
+from selfdrive.config import Conversions as CV
 
+ButtonType = car.CarState.ButtonEvent.Type
 
-class CarInterface(CarInterfaceBase):
+# define Logger class to implement logging functionality
+class CarInterfaceLogger(CarInterfaceBase):
+  def __init__(self, name, CP, CarController, CarState):
+    CarInterfaceBase.__init__(self, CP, CarController, CarState)
+    self.name = name
+    self.logger = logging.getLogger(name)
+    h = logging.handlers.RotatingFileHandler(BASEDIR+"/"+str(name)+'.log', 'a', 10*1024*1024, 5) 
+    f = logging.Formatter('%(asctime)s %(processName)-10s %(name)s %(levelname)-8s %(message)s')
+    h.setFormatter(f)
+    self.logger.addHandler(h)
+    self.logger.setLevel(logging.CRITICAL) # set to logging.DEBUG to enable logging
+    # self.logger.setLevel(logging.INFO) # set to logging.CRITICAL to disable logging
+    self.delayLog = time.time()
+
+class CarInterface(CarInterfaceLogger):
+  def __init__(self, CP, CarController, CarState):
+    CarInterfaceLogger.__init__(self, "ChryslerCarInterface", CP, CarController, CarState)
+
   @staticmethod
   def compute_gb(accel, speed):
     return float(accel) / 3.0
@@ -19,6 +44,9 @@ class CarInterface(CarInterfaceBase):
 
     # Chrysler port is a community feature, since we don't own one to test
     ret.communityFeature = True
+
+    # use ACC to control the speed
+    ret.enableACCAccelControl = True
 
     # Speed conversion:              20, 45 mph
     ret.wheelbase = 3.089  # in meters for Pacifica Hybrid 2017
@@ -68,7 +96,19 @@ class CarInterface(CarInterfaceBase):
     # speeds
     ret.steeringRateLimited = self.CC.steer_rate_limited if self.CC is not None else False
 
-    ret.buttonEvents = []
+    # accel/decel button presses
+    buttonEvents = []
+    if self.CS.accelCruiseButtonChanged:
+      be = car.CarState.ButtonEvent.new_message()
+      be.type = ButtonType.accelCruise
+      be.pressed = self.CS.accelCruiseButton
+      buttonEvents.append(be)
+    if self.CS.decelCruiseButtonChanged:
+      be = car.CarState.ButtonEvent.new_message()
+      be.type = ButtonType.decelCruise
+      be.pressed = self.CS.decelCruiseButton
+      buttonEvents.append(be)
+    ret.buttonEvents = buttonEvents
 
     # events
     events = self.create_common_events(ret, extra_gears=[car.CarState.GearShifter.low], gas_resume_speed=2.)
@@ -87,9 +127,20 @@ class CarInterface(CarInterfaceBase):
   # to be called @ 100hz
   def apply(self, c):
 
-    if (self.CS.frame == -1):
-      return [] # if we haven't seen a frame 220, then do not update.
+    if (self.CS.frame == -1 or self.CS.buttonCounter == -1):
+      return [] # if we haven't seen a frame 220 or 23b, then do not update.
 
-    can_sends = self.CC.update(c.enabled, self.CS, c.actuators, c.cruiseControl.cancel, c.hudControl.visualAlert)
+    if time.time() - self.delayLog > 5 or self.CS.out.buttonEvents:
+      self.delayLog = time.time()
+      self.logger.info("******************************")
+      self.logger.debug("CS: %s" % str(self.CS.out))
+      self.logger.debug("******************************")
+      self.logger.debug("CC: %s" % str(c))
+      self.logger.debug("******************************")
+      self.logger.info("Cruise enabled  : %s" % str(self.CS.out.cruiseState.enabled))
+      self.logger.info("Cruise Set Speed: %s" % str(self.CS.out.cruiseState.speed * CV.MS_TO_MPH))
+      self.logger.info("Current Speed   : %s" % str(self.CS.out.vEgo * CV.MS_TO_MPH))
+      self.logger.info("Target Speed    : %s" % str(c.cruiseControl.targetSpeed * CV.MS_TO_MPH))      
+    can_sends = self.CC.update(c.enabled, self.CS, c.actuators, c.cruiseControl.cancel, c.hudControl.visualAlert, self.CS.out.cruiseState.speed, c.cruiseControl.targetSpeed)
 
     return can_sends
