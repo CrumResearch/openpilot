@@ -73,10 +73,15 @@ def update_v_cruise(v_cruise_kph, buttonEvents, enabled):
   return v_cruise_kph
 
 
-def initialize_v_cruise(v_ego, buttonEvents, v_cruise_last):
-  for b in buttonEvents:
-    # 250kph or above probably means we never had a set speed
-    if b.type == "accelCruise" and v_cruise_last < 250:
-      return v_cruise_last
+def initialize_v_cruise(v_ego, buttonEvents, v_cruise_last, enableACCAccelControl):
+  if v_cruise_last < 250:
+    for b in buttonEvents:
+      if enableACCAccelControl: # Resume from current speed
+        if b.type == "resumeCruise":
+          return v_cruise_last  
+
+      # 250kph or above probably means we never had a set speed
+      elif b.type == "accelCruise":
+        return v_cruise_last
 
   return int(round(clip(v_ego * CV.MS_TO_KPH, V_CRUISE_ENABLE_MIN, V_CRUISE_MAX)))

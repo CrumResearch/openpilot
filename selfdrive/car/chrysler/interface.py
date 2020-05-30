@@ -108,6 +108,11 @@ class CarInterface(CarInterfaceLogger):
       be.type = ButtonType.decelCruise
       be.pressed = self.CS.decelCruiseButton
       buttonEvents.append(be)
+    if self.CS.resumeCruiseButtonChanged:
+      be = car.CarState.ButtonEvent.new_message()
+      be.type = ButtonType.resumeCruise
+      be.pressed = self.CS.resumeCruiseButton
+      buttonEvents.append(be)
     ret.buttonEvents = buttonEvents
 
     # events

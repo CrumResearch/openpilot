@@ -164,7 +164,7 @@ def state_transition(frame, CS, CP, state, events, soft_disable_timer, v_cruise_
         else:
           state = State.enabled
         AM.add(frame, "enable", enabled)
-        v_cruise_kph = initialize_v_cruise(CS.vEgo, CS.buttonEvents, v_cruise_kph_last)
+        v_cruise_kph = initialize_v_cruise(CS.vEgo, CS.buttonEvents, v_cruise_kph_last, CP.enableACCAccelControl)
 
   # ENABLED
   elif state == State.enabled:

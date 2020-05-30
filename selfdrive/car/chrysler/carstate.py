@@ -12,6 +12,7 @@ class CarState(CarStateBase):
     super().__init__(CP)
     can_define = CANDefine(DBC[CP.carFingerprint]['pt'])
     self.shifter_values = can_define.dv["GEAR"]['PRNDL']
+    self.prevResumeCruiseButton = 0
     self.prevAccelCruiseButton = 0
     self.prevDecelCruiseButton = 0
 
@@ -65,12 +66,19 @@ class CarState(CarStateBase):
     self.lkas_car_model = cp_cam.vl["LKAS_HUD"]['CAR_MODEL']
     self.lkas_status_ok = cp_cam.vl["LKAS_HEARTBIT"]['LKAS_STATUS_OK']
 
+    # Track buttons
     self.buttonCounter = int(cp.vl["WHEEL_BUTTONS"]['COUNTER'])
+
+    self.resumeCruiseButton = bool(cp.vl["WHEEL_BUTTONS"]['ACC_SPEED_DEC'])
+    self.resumeCruiseButtonChanged = (self.prevResumeCruiseButton != self.resumeCruiseButton)
+    self.prevResumeCruiseButton = self.resumeCruiseButton
+
     self.accelCruiseButton = bool(cp.vl["WHEEL_BUTTONS"]['ACC_SPEED_INC'])
-    self.decelCruiseButton = bool(cp.vl["WHEEL_BUTTONS"]['ACC_SPEED_DEC'])
     self.accelCruiseButtonChanged = (self.prevAccelCruiseButton != self.accelCruiseButton)
-    self.decelCruiseButtonChanged = (self.prevDecelCruiseButton != self.decelCruiseButton)       
     self.prevAccelCruiseButton = self.accelCruiseButton
+
+    self.decelCruiseButton = bool(cp.vl["WHEEL_BUTTONS"]['ACC_SPEED_DEC'])
+    self.decelCruiseButtonChanged = (self.prevDecelCruiseButton != self.decelCruiseButton)
     self.prevDecelCruiseButton = self.decelCruiseButton
 
     return ret
@@ -117,7 +125,7 @@ class CarState(CarStateBase):
       ("WHEEL_SPEEDS", 50),
       ("STEERING", 100),
       ("ACC_2", 50),
-      ("WHEEL_BUTTONS", 50),
+      ("WHEEL_BUTTONS", 100),
     ]
 
     return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, 0)

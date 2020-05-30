@@ -20,8 +20,8 @@ class Logger():
     f = logging.Formatter('%(asctime)s %(processName)-10s %(name)s %(levelname)-8s %(message)s')
     h.setFormatter(f)
     self.logger.addHandler(h)
-    self.logger.setLevel(logging.CRITICAL) # set to logging.DEBUG to enable logging
-    # self.logger.setLevel(logging.DEBUG) # set to logging.CRITICAL to disable logging
+    # self.logger.setLevel(logging.CRITICAL) # set to logging.DEBUG to enable logging
+    self.logger.setLevel(logging.DEBUG) # set to logging.CRITICAL to disable logging
     self.delayLog = time.time()
 
 class CarController(Logger):
@@ -36,6 +36,9 @@ class CarController(Logger):
     self.gone_fast_yet = False
     self.steer_rate_limited = False
     self.enable_acc_accel_control = CP.enableACCAccelControl
+    self.last_button_counter = -1
+    self.button_counter_drift = 0
+    self.last_target_speed = -1
 
     self.logger.info("************** INIT CarController")
     self.logger.info("enableACCAccelControl: %s" % str(self.enable_acc_accel_control))
@@ -79,23 +82,28 @@ class CarController(Logger):
       can_sends.append(new_msg)
       
     elif self.enable_acc_accel_control and enabled:
-      # Move the adaptive curse control to the target speed
-      if self.ccframe % 10 == 0: # max pressing speed is 10hz
-        # Using MPH since it's more coarse so there should be less wobble on the speed setting
-        current = round(acc_speed * CV.MS_TO_MPH)
-        target = round(target_speed * CV.MS_TO_MPH)
-        self.logger.info("**************")
-        self.logger.info("Current ACC Speed: %s" % str(current))
-        self.logger.info("Target ACC Speed: %s" % str(target))
+      if CS.buttonCounter != self.last_button_counter:
+        self.last_button_counter = CS.buttonCounter
+        # Move the adaptive curse control to the target speed
+        if CS.buttonCounter % 2 == 0: # press/not-pressed
+          if self.last_target_speed == target: # we seem to have drifted since the speed is the same as last time
+            self.button_counter_drift += 1
 
-        if target < current and current > MIN_ACC_SPEED_MPH:
-          self.logger.info("Slowing Down: ACC_SPEED_DEC")
-          new_msg = create_wheel_buttons_command(self, self.packer, CS.buttonCounter, 'ACC_SPEED_DEC', True)
-          can_sends.append(new_msg)
-        elif target > current:
-          self.logger.info("Speeding Up: ACC_SPEED_INC")
-          new_msg = create_wheel_buttons_command(self, self.packer, CS.buttonCounter, 'ACC_SPEED_INC', True)
-          can_sends.append(new_msg)
+          # Using MPH since it's more coarse so there should be less wobble on the speed setting
+          current = round(acc_speed * CV.MS_TO_MPH)
+          target = round(target_speed * CV.MS_TO_MPH)
+          self.logger.info("From %s -> %s" % (str(current),str(target)))
+
+          if target < current and current > MIN_ACC_SPEED_MPH:
+            self.last_target_speed = target
+            new_msg = create_wheel_buttons_command(self, self.packer, (CS.buttonCounter + self.button_counter_drift) % 16, 'ACC_SPEED_DEC', True)
+            can_sends.append(new_msg)
+          elif target > current:
+            self.last_target_speed = target
+            new_msg = create_wheel_buttons_command(self, self.packer, (CS.buttonCounter + self.button_counter_drift) % 16, 'ACC_SPEED_INC', True)
+            can_sends.append(new_msg)
+          else:
+            self.last_target_speed = -1
 
     # LKAS_HEARTBIT is forwarded by Panda so no need to send it here.
     # frame is 100Hz (0.01s period)
