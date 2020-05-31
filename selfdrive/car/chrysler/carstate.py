@@ -69,7 +69,7 @@ class CarState(CarStateBase):
     # Track buttons
     self.buttonCounter = int(cp.vl["WHEEL_BUTTONS"]['COUNTER'])
 
-    self.resumeCruiseButton = bool(cp.vl["WHEEL_BUTTONS"]['ACC_SPEED_DEC'])
+    self.resumeCruiseButton = bool(cp.vl["WHEEL_BUTTONS"]['ACC_RESUME'])
     self.resumeCruiseButtonChanged = (self.prevResumeCruiseButton != self.resumeCruiseButton)
     self.prevResumeCruiseButton = self.resumeCruiseButton
 
@@ -113,6 +113,7 @@ class CarState(CarStateBase):
       ("TRACTION_OFF", "TRACTION_BUTTON", 0),
       ("SEATBELT_DRIVER_UNLATCHED", "SEATBELT_STATUS", 0),
       ("COUNTER", "WHEEL_BUTTONS", -1),
+      ("ACC_RESUME", "WHEEL_BUTTONS", 0),
       ("ACC_SPEED_INC", "WHEEL_BUTTONS", 0),
       ("ACC_SPEED_DEC", "WHEEL_BUTTONS", 0),
     ]

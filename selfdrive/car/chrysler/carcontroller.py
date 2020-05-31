@@ -88,14 +88,16 @@ class CarController(Logger):
           current = round(acc_speed * CV.MS_TO_MPH)
           target = round(target_speed * CV.MS_TO_MPH)
 
-          button_to_press = ''
+          button_to_press = None
           if target < current and current > MIN_ACC_SPEED_MPH:
             button_to_press ='ACC_SPEED_DEC'
           elif target > current:
             button_to_press ='ACC_SPEED_INC'
 
-          if button_to_press != '':
+          if button_to_press is not None:
             self.logger.info("From %s -> %s" % (str(current),str(target)))
+
+            #TODO: Is it +1 or -1 that does the trick?
             new_msg = create_wheel_buttons_command(self, self.packer, CS.buttonCounter - 1, button_to_press, True)
             new_msg = create_wheel_buttons_command(self, self.packer, CS.buttonCounter, button_to_press, True)
             new_msg = create_wheel_buttons_command(self, self.packer, CS.buttonCounter + 1, button_to_press, True)
