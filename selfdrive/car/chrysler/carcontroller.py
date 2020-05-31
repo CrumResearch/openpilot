@@ -37,8 +37,6 @@ class CarController(Logger):
     self.steer_rate_limited = False
     self.enable_acc_accel_control = CP.enableACCAccelControl
     self.last_button_counter = -1
-    self.button_counter_drift = 0
-    self.last_target_speed = -1
 
     self.logger.info("************** INIT CarController")
     self.logger.info("enableACCAccelControl: %s" % str(self.enable_acc_accel_control))
@@ -85,25 +83,24 @@ class CarController(Logger):
       if CS.buttonCounter != self.last_button_counter:
         self.last_button_counter = CS.buttonCounter
         # Move the adaptive curse control to the target speed
-        if CS.buttonCounter % 2 == 0: # press/not-pressed
-          if self.last_target_speed == target: # we seem to have drifted since the speed is the same as last time
-            self.button_counter_drift += 1
-
+        if self.ccframe % 10 == 0: # press/not-pressed
           # Using MPH since it's more coarse so there should be less wobble on the speed setting
           current = round(acc_speed * CV.MS_TO_MPH)
           target = round(target_speed * CV.MS_TO_MPH)
-          self.logger.info("From %s -> %s" % (str(current),str(target)))
 
+          button_to_press = ''
           if target < current and current > MIN_ACC_SPEED_MPH:
-            self.last_target_speed = target
-            new_msg = create_wheel_buttons_command(self, self.packer, (CS.buttonCounter + self.button_counter_drift) % 16, 'ACC_SPEED_DEC', True)
-            can_sends.append(new_msg)
+            button_to_press ='ACC_SPEED_DEC'
           elif target > current:
-            self.last_target_speed = target
-            new_msg = create_wheel_buttons_command(self, self.packer, (CS.buttonCounter + self.button_counter_drift) % 16, 'ACC_SPEED_INC', True)
+            button_to_press ='ACC_SPEED_INC'
+
+          if button_to_press != '':
+            self.logger.info("From %s -> %s" % (str(current),str(target)))
+            new_msg = create_wheel_buttons_command(self, self.packer, CS.buttonCounter - 1, button_to_press, True)
+            new_msg = create_wheel_buttons_command(self, self.packer, CS.buttonCounter, button_to_press, True)
+            new_msg = create_wheel_buttons_command(self, self.packer, CS.buttonCounter + 1, button_to_press, True)
             can_sends.append(new_msg)
-          else:
-            self.last_target_speed = -1
+
 
     # LKAS_HEARTBIT is forwarded by Panda so no need to send it here.
     # frame is 100Hz (0.01s period)
