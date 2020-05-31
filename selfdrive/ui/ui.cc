@@ -482,6 +482,10 @@ void handle_message(UIState *s,  Message* msg) {
     }
   } else if (which == cereal::Event::LIVE_MAP_DATA) {
     scene.map_valid = event.getLiveMapData().getMapValid();
+    scene.speedlimit_valid = event.getLiveMapData().getSpeedLimitValid();
+    scene.speedlimit = event.getLiveMapData().getSpeedLimit();
+    // scene.speedlimitahead_valid = event.getLiveMapData().getSpeedLimitAheadValid();
+    // scene.speedlimitaheaddistance = event.getLiveMapData().getSpeedLimitAheadDistance();
   } else if (which == cereal::Event::THERMAL) {
     auto data = event.getThermal();
 
