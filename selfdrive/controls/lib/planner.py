@@ -4,6 +4,7 @@ import numpy as np
 from common.params import Params
 from common.numpy_fast import interp
 import time
+from datetime import datetime
 from common.basedir import BASEDIR
 import logging
 import logging.handlers
@@ -42,6 +43,7 @@ _A_TOTAL_MAX_BP = [20., 40.]
 # 75th percentile
 SPEED_PERCENTILE_IDX = 7
 
+CURVATURE_BRAKING_FACTOR = 1.0 # How soon before curve to break (lower adds more time before curve)
 
 def calc_cruise_accel_limits(v_ego, following):
   a_cruise_min = interp(v_ego, _A_CRUISE_MIN_BP, _A_CRUISE_MIN_V)
@@ -74,8 +76,8 @@ class Logger():
     f = logging.Formatter('%(asctime)s %(processName)-10s %(name)s %(levelname)-8s %(message)s')
     h.setFormatter(f)
     self.logger.addHandler(h)
-    self.logger.setLevel(logging.CRITICAL) # set to logging.DEBUG to enable logging
-    # self.logger.setLevel(logging.DEBUG) # set to logging.CRITICAL to disable logging
+    # self.logger.setLevel(logging.CRITICAL) # set to logging.DEBUG to enable logging
+    self.logger.setLevel(logging.DEBUG) # set to logging.CRITICAL to disable logging
     self.delayLog = time.time()
 
 class Planner(Logger):
@@ -132,6 +134,32 @@ class Planner(Logger):
 
     self.v_acc_future = min([self.mpc1.v_mpc_future, self.mpc2.v_mpc_future, v_cruise_setpoint])
 
+  # Use OSM data collected by mapd for upcoming curves
+  def liveMapCurvature(self, sm):
+    v_curvature_map = MAX_SPEED
+    now = datetime.now()
+    try:
+      if sm['liveMapData'].curvatureValid and (sm['liveMapData'].lastGps.timestamp - time.mktime(now.timetuple()) * 1000) < 10000:
+        curvature = abs(sm['liveMapData'].curvature)
+        radius = 1/max(1e-4, curvature) * CURVATURE_BRAKING_FACTOR
+        # if gas_button_status == 1: # SPORT
+        #   radius = radius * 2.0
+        # elif gas_button_status == 2: # ECO
+        #   radius = radius * 1.0
+        # else:
+        #   radius = radius * 1.5
+        if radius > 500:
+          c = 0.9 # 0.9 at 1000m = 108 kph
+        elif radius > 250:
+          c = 3.5 - 13/2500 * radius # 2.2 at 250m 84 kph
+        else:
+          c = 3.0 - 2/625 * radius # 3.0 at 15m 24 kph
+        v_curvature_map = math.sqrt(c*radius)
+    except KeyError:
+      pass
+
+    return v_curvature_map
+
   def update(self, sm, pm, CP, VM, PP):
     """Gets called when new radarState is available"""
     cur_time = sec_since_boot()
@@ -147,6 +175,9 @@ class Planner(Logger):
 
     enabled = (long_control_state == LongCtrlState.pid) or (long_control_state == LongCtrlState.stopping)
     following = lead_1.status and lead_1.dRel < 45.0 and lead_1.vLeadK > v_ego and lead_1.aLeadK > 0.0
+
+    # Use OSM for future curvature
+    v_curvature_map = self.liveMapCurvature(sm)
 
     if len(sm['model'].path.poly):
       path = list(sm['model'].path.poly)
@@ -165,6 +196,7 @@ class Planner(Logger):
       model_speed = max(20.0 * CV.MPH_TO_MS, model_speed) # Don't slow down below 20mph
     else:
       model_speed = MAX_SPEED
+      self.logger.debug("* NO PATH.POLY DATA")
 
     # Calculate speed for normal cruise control
     if enabled and not self.first_loop:
@@ -210,6 +242,7 @@ class Planner(Logger):
     self.mpc2.update(pm, sm['carState'], lead_2, v_cruise_setpoint)
 
     self.choose_solution(v_cruise_setpoint, enabled)
+    v_target_future = min(MAX_SPEED, self.v_acc_future, model_speed, v_curvature_map) # What speed is OP targeting without all the smoothing?
 
     # determine fcw
     if self.mpc1.new_lead:
@@ -246,7 +279,7 @@ class Planner(Logger):
     plan_send.plan.aStart = float(self.a_acc_start)
     plan_send.plan.vTarget = float(self.v_acc)
     plan_send.plan.aTarget = float(self.a_acc)
-    plan_send.plan.vTargetFuture = float(self.v_acc_future)
+    plan_send.plan.vTargetFuture = float(v_target_future)
     plan_send.plan.hasLead = self.mpc1.prev_lead_status
     plan_send.plan.longitudinalPlanSource = self.longitudinalPlanSource
 
@@ -271,4 +304,6 @@ class Planner(Logger):
 
     if time.time() - self.delayLog > 5:
       self.delayLog = time.time()
-      self.logger.info("planner: %s" % str(plan_send))
+      self.logger.info("speeds: v_target_future: %s, (v_acc_future: %s, model_speed: %s, v_curvature_map: %s)" % 
+                       (str(v_target_future), str(self.v_acc_future), str(model_speed), str(v_curvature_map)))
+      self.logger.debug("planner: %s" % str(plan_send))
