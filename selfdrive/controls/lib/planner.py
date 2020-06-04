@@ -142,12 +142,15 @@ class Planner(Logger):
       if sm['liveMapData'].curvatureValid and (sm['liveMapData'].lastGps.timestamp - time.mktime(now.timetuple()) * 1000) < 10000:
         curvature = abs(sm['liveMapData'].curvature)
         radius = 1/max(1e-4, curvature) * CURVATURE_BRAKING_FACTOR
+        
         # if gas_button_status == 1: # SPORT
         #   radius = radius * 2.0
         # elif gas_button_status == 2: # ECO
         #   radius = radius * 1.0
         # else:
         #   radius = radius * 1.5
+        radius = radius * 1.5 # Normal
+
         if radius > 500:
           c = 0.9 # 0.9 at 1000m = 108 kph
         elif radius > 250:
