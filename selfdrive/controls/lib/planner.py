@@ -272,4 +272,6 @@ class Planner(Logger):
 
     if time.time() - self.delayLog > 5:
       self.delayLog = time.time()
-      self.logger.info("planner: %s" % str(plan_send))
+      self.logger.info("speeds: v_target_future: %s, (v_acc_future: %s, model_speed: %s)" % 
+                       (str(v_target_future), str(self.v_acc_future), str(model_speed)))
+      self.logger.debug("planner: %s" % str(plan_send))
