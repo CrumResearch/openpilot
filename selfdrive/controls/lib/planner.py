@@ -210,6 +210,7 @@ class Planner(Logger):
     self.mpc2.update(pm, sm['carState'], lead_2, v_cruise_setpoint)
 
     self.choose_solution(v_cruise_setpoint, enabled)
+    v_target_future = min(MAX_SPEED, self.v_acc_future, model_speed) # What speed is OP targeting without all the smoothing?
 
     # determine fcw
     if self.mpc1.new_lead:
