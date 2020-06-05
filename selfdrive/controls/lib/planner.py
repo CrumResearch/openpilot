@@ -247,7 +247,7 @@ class Planner(Logger):
     plan_send.plan.aStart = float(self.a_acc_start)
     plan_send.plan.vTarget = float(self.v_acc)
     plan_send.plan.aTarget = float(self.a_acc)
-    plan_send.plan.vTargetFuture = float(self.v_acc_future)
+    plan_send.plan.vTargetFuture = float(v_target_future)
     plan_send.plan.hasLead = self.mpc1.prev_lead_status
     plan_send.plan.longitudinalPlanSource = self.longitudinalPlanSource
 
