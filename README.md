@@ -1,37 +1,36 @@
-What's in the fork
-==================
-* Uses OpenStreetMaps to pull speed limits to display on the screen.  <br>(Requires an internet connection while driving) <br>Thanks to [arne182](https://github.com/arne182/ArnePilot) for his work on this.
+# FCA OpenPilot/ACC Hybrid Speed Control
 
-<br>
+## What is this Fork?
+This fork combines the speed control logic of OpenPilot with the vehicles Adaptice Cruse Control. 
+It does this by changing the ACC to match the value OpenPilot calculates as the desired speed.
+This has some advantages like slowing while cornering and detecting cut-ins.
 
-TODO:
------
-* For FCA vehicles, adjust cruise control speed to the OpenPilot target speed to allow OP to control the speed of the vehicle.
-* Use map data to slow for curves
-* Use speed limit data to slow for lower speed limits
+**Note** that changing the ACC speed does not always result in the vehical breaking unless the difference in speed is large enough. In these low difference cases, it does let off the gas.
 
-<br>
 
 [![](https://i.imgur.com/UelUjKAh.png)](#)
 
 Table of Contents
 =======================
 
-* [What is openpilot?](#what-is-openpilot)
-* [Integration with Stock Features](#integration-with-stock-features)
-* [Supported Hardware](#supported-hardware)
-* [Supported Cars](#supported-cars)
-* [Community Maintained Cars and Features](#community-maintained-cars-and-features)
-* [Installation Instructions](#installation-instructions)
-* [Limitations of openpilot ALC and LDW](#limitations-of-openpilot-alc-and-ldw)
-* [Limitations of openpilot ACC and FCW](#limitations-of-openpilot-acc-and-fcw)
-* [Limitations of openpilot DM](#limitations-of-openpilot-dm)
-* [User Data and comma Account](#user-data-and-comma-account)
-* [Safety and Testing](#safety-and-testing)
-* [Testing on PC](#testing-on-pc)
-* [Community and Contributing](#community-and-contributing)
-* [Directory Structure](#directory-structure)
-* [Licensing](#licensing)
+- [FCA OpenPilot/ACC Hybrid Speed Control](#fca-openpilotacc-hybrid-speed-control)
+  - [What is this Fork?](#what-is-this-fork)
+- [Table of Contents](#table-of-contents)
+  - [What is openpilot?](#what-is-openpilot)
+  - [Integration with Stock Features](#integration-with-stock-features)
+  - [Supported Hardware](#supported-hardware)
+  - [Supported Cars](#supported-cars)
+  - [Community Maintained Cars and Features](#community-maintained-cars-and-features)
+  - [Installation Instructions](#installation-instructions)
+  - [Limitations of openpilot ALC and LDW](#limitations-of-openpilot-alc-and-ldw)
+  - [Limitations of openpilot ACC and FCW](#limitations-of-openpilot-acc-and-fcw)
+  - [Limitations of openpilot DM](#limitations-of-openpilot-dm)
+  - [User Data and comma Account](#user-data-and-comma-account)
+  - [Safety and Testing](#safety-and-testing)
+  - [Testing on PC](#testing-on-pc)
+  - [Community and Contributing](#community-and-contributing)
+  - [Directory Structure](#directory-structure)
+  - [Licensing](#licensing)
 
 ---
 
