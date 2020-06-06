@@ -98,17 +98,17 @@ class CarInterface(CarInterfaceLogger):
 
     # accel/decel button presses
     buttonEvents = []
-    if self.CS.accelCruiseButtonChanged:
+    if self.CS.accelCruiseButton or self.CS.accelCruiseButtonChanged:
       be = car.CarState.ButtonEvent.new_message()
       be.type = ButtonType.accelCruise
       be.pressed = self.CS.accelCruiseButton
       buttonEvents.append(be)
-    if self.CS.decelCruiseButtonChanged:
+    if self.CS.decelCruiseButton or self.CS.decelCruiseButtonChanged:
       be = car.CarState.ButtonEvent.new_message()
       be.type = ButtonType.decelCruise
       be.pressed = self.CS.decelCruiseButton
       buttonEvents.append(be)
-    if self.CS.resumeCruiseButtonChanged:
+    if self.CS.resumeCruiseButton or self.CS.resumeCruiseButtonChanged:
       be = car.CarState.ButtonEvent.new_message()
       be.type = ButtonType.resumeCruise
       be.pressed = self.CS.resumeCruiseButton

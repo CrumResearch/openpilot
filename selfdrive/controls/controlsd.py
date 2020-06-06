@@ -143,7 +143,7 @@ def state_transition(frame, CS, CP, state, events, soft_disable_timer, v_cruise_
 
   # if stock cruise is completely disabled, then we can use our own set speed logic
   if not CP.enableCruise or CP.enableACCAccelControl:
-    v_cruise_kph = update_v_cruise(v_cruise_kph, CS.buttonEvents, enabled)
+    v_cruise_kph = update_v_cruise(v_cruise_kph, CS.buttonEvents, enabled, CP.enableACCAccelControl)
   elif CP.enableCruise and CS.cruiseState.enabled:
     v_cruise_kph = CS.cruiseState.speed * CV.MS_TO_KPH
 
