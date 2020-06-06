@@ -59,7 +59,9 @@ def get_steer_max(CP, v_ego):
   return interp(v_ego, CP.steerMaxBP, CP.steerMaxV)
 
 
-def update_v_cruise(v_cruise_kph, buttonEvents, enabled):
+def update_v_cruise(v_cruise_kph, buttonEvents, enabled, enableACCAccelControl):
+  cruiseMin = V_CRUISE_MIN if enableACCAccelControl else 32
+
   # handle button presses. TODO: this should be in state_control, but a decelCruise press
   # would have the effect of both enabling and changing speed is checked after the state transition
   for b in buttonEvents:
@@ -68,20 +70,21 @@ def update_v_cruise(v_cruise_kph, buttonEvents, enabled):
         v_cruise_kph += V_CRUISE_DELTA - (v_cruise_kph % V_CRUISE_DELTA)
       elif b.type == "decelCruise":
         v_cruise_kph -= V_CRUISE_DELTA - ((V_CRUISE_DELTA - v_cruise_kph) % V_CRUISE_DELTA)
-      v_cruise_kph = clip(v_cruise_kph, V_CRUISE_MIN, V_CRUISE_MAX)
+      v_cruise_kph = clip(v_cruise_kph, cruiseMin, V_CRUISE_MAX)
 
   return v_cruise_kph
 
 
 def initialize_v_cruise(v_ego, buttonEvents, v_cruise_last, enableACCAccelControl):
+  # 250kph or above probably means we never had a set speed
   if v_cruise_last < 250:
     for b in buttonEvents:
       if enableACCAccelControl: # Resume from current speed
         if b.type == "resumeCruise":
           return v_cruise_last  
 
-      # 250kph or above probably means we never had a set speed
       elif b.type == "accelCruise":
         return v_cruise_last
 
-  return int(round(clip(v_ego * CV.MS_TO_KPH, V_CRUISE_ENABLE_MIN, V_CRUISE_MAX)))
+  cruiseMinEnable = V_CRUISE_ENABLE_MIN if enableACCAccelControl else 32
+  return int(round(clip(v_ego * CV.MS_TO_KPH, cruiseMinEnable, V_CRUISE_MAX)))
