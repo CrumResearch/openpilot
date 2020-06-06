@@ -7,6 +7,7 @@ This has some advantages like slowing while cornering and detecting cut-ins.
 
 #**Safety Notes** 
 * Changing the ACC speed does not always result in the vehical breaking unless the difference in speed is large enough. In these low difference cases, it does let off the gas.
+* ACC can't go slower that 20mph
 * I disabled the "feature" where OpenPilot gets disengaged on gas press, but it doesn't seem to work for me. (Still a work in progress I guess)
 
 [![](https://i.imgur.com/UelUjKAh.png)](#)
