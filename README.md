@@ -5,8 +5,8 @@ This fork combines the speed control logic of OpenPilot with the vehicles Adapti
 It does this by changing the ACC to match the value OpenPilot calculates as the desired speed.
 This has some advantages like slowing while cornering and detecting cut-ins.
 
-#**Safety Notes** 
-* Changing the ACC speed does not always result in the vehical breaking unless the difference in speed is large enough. In these low difference cases, it does let off the gas.
+# **Safety Notes** 
+* Changing the ACC speed does not always result in the vehical breaking unless the difference in speed is large enough. If the speed difference is small, the vehicle just lets off the gas.
 * ACC can't go slower that 20mph
 * I disabled the "feature" where OpenPilot gets disengaged on gas press, but it doesn't seem to work for me. (Still a work in progress I guess)
 
